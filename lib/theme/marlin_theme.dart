@@ -8,6 +8,26 @@ enum MarlinThemePalette {
   midnight,
 }
 
+extension MarlinThemePaletteLabel on MarlinThemePalette {
+  String get label {
+    return switch (this) {
+      MarlinThemePalette.ocean => 'Ocean',
+      MarlinThemePalette.ember => 'Ember',
+      MarlinThemePalette.mint => 'Mint',
+      MarlinThemePalette.midnight => 'Midnight',
+    };
+  }
+
+  String get description {
+    return switch (this) {
+      MarlinThemePalette.ocean => 'Biru terang untuk tampilan default.',
+      MarlinThemePalette.ember => 'Oranye hangat dan kontras.',
+      MarlinThemePalette.mint => 'Hijau segar dan ringan.',
+      MarlinThemePalette.midnight => 'Mode gelap untuk malam.',
+    };
+  }
+}
+
 class MarlinThemes {
   static final ThemeData oceanLight = _theme(
     seedColor: const Color(0xFF0EA5E9),

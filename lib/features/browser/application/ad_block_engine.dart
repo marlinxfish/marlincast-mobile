@@ -22,7 +22,7 @@ class RustAdBlockEngine implements AdBlockEngine {
     required Uri sourceUrl,
     String requestType = 'other',
   }) async {
-    if (requestType == 'image' && _isFirstParty(url: url, sourceUrl: sourceUrl)) {
+    if (requestType == 'image' && !_isKnownAdHost(url.host)) {
       return false;
     }
 
@@ -39,20 +39,23 @@ class RustAdBlockEngine implements AdBlockEngine {
   }
 }
 
-bool _isFirstParty({required Uri url, required Uri sourceUrl}) {
-  final host = url.host.toLowerCase();
-  final sourceHost = sourceUrl.host.toLowerCase();
-  return host == sourceHost || host.endsWith('.$sourceHost');
+bool _isKnownAdHost(String host) {
+  final normalizedHost = host.toLowerCase();
+  return _knownAdHosts.any(normalizedHost.endsWith);
 }
+
+const _knownAdHosts = [
+  'doubleclick.net',
+  'googlesyndication.com',
+  'adservice.google.com',
+  'adnxs.com',
+  'popads.net',
+];
 
 class RuleBasedAdBlockEngine implements AdBlockEngine {
   static const _blockedHosts = [
-    'doubleclick.net',
-    'googlesyndication.com',
+    ..._knownAdHosts,
     'google-analytics.com',
-    'adservice.google.com',
-    'adnxs.com',
-    'popads.net',
   ];
 
   static const _blockedPathTerms = [
@@ -69,7 +72,7 @@ class RuleBasedAdBlockEngine implements AdBlockEngine {
     String requestType = 'other',
   }) async {
     if (requestType == 'image') {
-      return _blockedHosts.any(url.host.toLowerCase().endsWith);
+      return _isKnownAdHost(url.host);
     }
 
     final host = url.host.toLowerCase();

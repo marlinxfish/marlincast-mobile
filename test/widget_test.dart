@@ -75,6 +75,26 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(SettingsPage), findsOneWidget);
+    expect(find.text('Tema Warna'), findsOneWidget);
+    expect(find.text('Ocean'), findsOneWidget);
+    expect(find.text('Ember'), findsOneWidget);
+    expect(find.text('Mint'), findsOneWidget);
+    expect(find.text('Midnight'), findsOneWidget);
+  });
+
+  testWidgets('settings theme option changes app theme', (tester) async {
+    await tester.pumpWidget(const MarlinCastApp(showBrowserWebView: false));
+
+    await tester.tap(find.byIcon(LucideIcons.menu));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Settings').last);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Midnight'));
+    await tester.pumpAndSettle();
+
+    final materialApp = tester.widget<MaterialApp>(find.byType(MaterialApp));
+    expect(materialApp.theme?.brightness, Brightness.dark);
   });
 
   test('provides three light palettes and one dark palette', () {
@@ -114,6 +134,30 @@ void main() {
     );
 
     expect(shouldBlock, isFalse);
+  });
+
+  test('adblock allows normal third-party images', () async {
+    final engine = RuleBasedAdBlockEngine();
+
+    final shouldBlock = await engine.shouldBlock(
+      url: Uri.parse('https://cdn.example-image.com/poster.jpg'),
+      sourceUrl: Uri.parse('https://example.com'),
+      requestType: 'image',
+    );
+
+    expect(shouldBlock, isFalse);
+  });
+
+  test('adblock blocks image only from known ad hosts', () async {
+    final engine = RuleBasedAdBlockEngine();
+
+    final shouldBlock = await engine.shouldBlock(
+      url: Uri.parse('https://doubleclick.net/banner.jpg'),
+      sourceUrl: Uri.parse('https://example.com'),
+      requestType: 'image',
+    );
+
+    expect(shouldBlock, isTrue);
   });
 
   test('adblock still blocks known ad hosts', () async {
