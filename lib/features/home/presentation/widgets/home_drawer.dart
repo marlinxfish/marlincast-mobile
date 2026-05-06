@@ -17,37 +17,50 @@ class HomeDrawer extends StatelessWidget {
       child: SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-          child: ListView(
+          child: Column(
             children: [
               _DrawerHeader(colorScheme: colorScheme),
               const SizedBox(height: 20),
-              _SectionLabel(
-                text: 'Menu',
-                colorScheme: colorScheme,
+              Expanded(
+                child: ListView(
+                  padding: EdgeInsets.zero,
+                  children: [
+                    _SectionLabel(
+                      text: 'Menu',
+                      colorScheme: colorScheme,
+                    ),
+                    const SizedBox(height: 8),
+                    _DrawerMenuTile(
+                      icon: LucideIcons.house,
+                      title: 'Home',
+                      routeName: AppRoutes.home,
+                      selected: currentRoute == AppRoutes.home,
+                    ),
+                    const SizedBox(height: 4),
+                    _DrawerMenuTile(
+                      icon: LucideIcons.globe,
+                      title: 'Browser',
+                      routeName: AppRoutes.browser,
+                      selected: currentRoute == AppRoutes.browser,
+                    ),
+                    const SizedBox(height: 4),
+                    _DrawerMenuTile(
+                      icon: LucideIcons.folderOpen,
+                      title: 'File Explorer',
+                      routeName: AppRoutes.fileExplorer,
+                      selected: currentRoute == AppRoutes.fileExplorer,
+                    ),
+                  ],
+                ),
               ),
-              const SizedBox(height: 8),
+              _UpgradeBanner(colorScheme: colorScheme),
+              const SizedBox(height: 10),
               _DrawerMenuTile(
-                icon: LucideIcons.house,
-                title: 'Home',
-                routeName: AppRoutes.home,
-                selected: currentRoute == AppRoutes.home,
+                icon: LucideIcons.settings,
+                title: 'Settings',
+                routeName: AppRoutes.settings,
+                selected: currentRoute == AppRoutes.settings,
               ),
-              const SizedBox(height: 4),
-              _DrawerMenuTile(
-                icon: LucideIcons.globe,
-                title: 'Browser',
-                routeName: AppRoutes.browser,
-                selected: currentRoute == AppRoutes.browser,
-              ),
-              const SizedBox(height: 4),
-              _DrawerMenuTile(
-                icon: LucideIcons.folderOpen,
-                title: 'File Explorer',
-                routeName: AppRoutes.fileExplorer,
-                selected: currentRoute == AppRoutes.fileExplorer,
-              ),
-              const SizedBox(height: 18),
-              _DrawerFooter(colorScheme: colorScheme),
             ],
           ),
         ),
@@ -189,31 +202,49 @@ class _DrawerMenuTile extends StatelessWidget {
   }
 }
 
-class _DrawerFooter extends StatelessWidget {
-  const _DrawerFooter({required this.colorScheme});
+class _UpgradeBanner extends StatelessWidget {
+  const _UpgradeBanner({required this.colorScheme});
 
   final ColorScheme colorScheme;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: colorScheme.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: colorScheme.outlineVariant),
+        color: colorScheme.primaryContainer,
+        borderRadius: BorderRadius.circular(18),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(LucideIcons.lockKeyhole, color: colorScheme.primary, size: 18),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              'VIP Cloud Cast belum aktif.',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: colorScheme.onSurfaceVariant,
-                fontWeight: FontWeight.w600,
+          Row(
+            children: [
+              Icon(
+                LucideIcons.sparkles,
+                color: colorScheme.onPrimaryContainer,
+                size: 18,
               ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Upgrade to Pro',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    color: colorScheme.onPrimaryContainer,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Cloud Cast & bebas iklan.',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: colorScheme.onPrimaryContainer.withValues(alpha: 0.78),
+              fontWeight: FontWeight.w600,
             ),
           ),
         ],

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../features/browser/presentation/browser_page.dart';
 import '../features/file_explorer/presentation/file_explorer_page.dart';
 import '../features/home/presentation/home_page.dart';
+import '../features/settings/presentation/settings_page.dart';
 import '../theme/marlin_theme.dart';
 import 'app_constants.dart';
 import 'app_routes.dart';
@@ -27,6 +28,7 @@ class MarlinCastApp extends StatelessWidget {
         AppRoutes.home: (_) => const HomePage(),
         AppRoutes.browser: (_) => BrowserPage(showWebView: showBrowserWebView),
         AppRoutes.fileExplorer: (_) => const FileExplorerPage(),
+        AppRoutes.settings: (_) => const SettingsPage(),
       },
     );
   }

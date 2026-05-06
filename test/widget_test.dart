@@ -10,6 +10,7 @@ import 'package:mobile/features/file_explorer/domain/local_media_file.dart';
 import 'package:mobile/features/file_explorer/presentation/file_explorer_page.dart';
 import 'package:mobile/features/home/presentation/home_page.dart';
 import 'package:mobile/features/home/presentation/widgets/home_drawer.dart';
+import 'package:mobile/features/settings/presentation/settings_page.dart';
 import 'package:mobile/theme/marlin_theme.dart';
 
 void main() {
@@ -26,6 +27,8 @@ void main() {
     expect(find.text('Home'), findsOneWidget);
     expect(find.text('Browser'), findsWidgets);
     expect(find.text('File Explorer'), findsWidgets);
+    expect(find.text('Upgrade to Pro'), findsOneWidget);
+    expect(find.text('Settings'), findsOneWidget);
   });
 
   testWidgets('browser menu opens browser page', (tester) async {
@@ -61,6 +64,17 @@ void main() {
 
     expect(find.byType(FileExplorerPage), findsOneWidget);
     expect(find.text('Pilih Video'), findsOneWidget);
+  });
+
+  testWidgets('settings menu opens settings page', (tester) async {
+    await tester.pumpWidget(const MarlinCastApp(showBrowserWebView: false));
+
+    await tester.tap(find.byIcon(LucideIcons.menu));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Settings').last);
+    await tester.pumpAndSettle();
+
+    expect(find.byType(SettingsPage), findsOneWidget);
   });
 
   test('provides three light palettes and one dark palette', () {
