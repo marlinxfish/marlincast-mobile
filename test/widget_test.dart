@@ -4,6 +4,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:mobile/app/marlin_cast_app.dart';
 import 'package:mobile/features/browser/application/ad_block_engine.dart';
 import 'package:mobile/features/browser/application/browser_url_resolver.dart';
+import 'package:mobile/features/browser/domain/detected_video.dart';
 import 'package:mobile/features/browser/presentation/browser_page.dart';
 import 'package:mobile/features/browser/application/video_sniffer.dart';
 import 'package:mobile/features/file_explorer/domain/local_media_file.dart';
@@ -45,10 +46,12 @@ void main() {
     await tester.pumpAndSettle();
 
     final browserTile = tester.widget<Material>(
-      find.ancestor(
-        of: find.text('Browser').last,
-        matching: find.byType(Material),
-      ).first,
+      find
+          .ancestor(
+            of: find.text('Browser').last,
+            matching: find.byType(Material),
+          )
+          .first,
     );
 
     expect(browserTile.color, isNot(Colors.transparent));
@@ -118,6 +121,41 @@ void main() {
       sniffer.inspect(url: Uri.parse('https://example.com/script.js')),
       isNull,
     );
+  });
+
+  test('sniffs broader media URL formats', () {
+    final sniffer = VideoSniffer();
+
+    expect(
+      sniffer.inspect(url: Uri.parse('https://cdn.example.com/manifest.mpd')),
+      isNotNull,
+    );
+    expect(
+      sniffer.inspect(
+        url: Uri.parse('https://cdn.example.com/file?mime=video/mp4'),
+      ),
+      isNotNull,
+    );
+    expect(
+      sniffer.inspect(url: Uri.parse('https://cdn.example.com/movie.webm')),
+      isNotNull,
+    );
+  });
+
+  test('detected video derives display quality', () {
+    final adaptiveVideo = DetectedVideo(
+      url: Uri.parse('https://cdn.example.com/master.m3u8'),
+      source: VideoDetectionSource.fileExtension,
+    );
+    final sizedVideo = DetectedVideo(
+      url: Uri.parse('https://cdn.example.com/video.mp4'),
+      source: VideoDetectionSource.htmlMediaElement,
+      width: 1920,
+      height: 1080,
+    );
+
+    expect(adaptiveVideo.displayQuality, 'Adaptive');
+    expect(sizedVideo.displayQuality, '1080p');
   });
 
   test('adblock allows normal first-party banner images', () async {

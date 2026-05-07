@@ -30,6 +30,7 @@ class _MarlinCastAppState extends State<MarlinCastApp> {
   void initState() {
     super.initState();
     _themeController = ThemeController(initialMode: widget.themeMode);
+    _themeController.load();
   }
 
   @override
