@@ -3,19 +3,19 @@ import 'package:flutter/widgets.dart';
 import 'marlin_theme.dart';
 
 class ThemeController extends ChangeNotifier {
-  ThemeController({MarlinThemePalette initialPalette = MarlinThemePalette.ocean})
-    : _palette = initialPalette;
+  ThemeController({MarlinThemeMode initialMode = MarlinThemeMode.light})
+    : _mode = initialMode;
 
-  MarlinThemePalette _palette;
+  MarlinThemeMode _mode;
 
-  MarlinThemePalette get palette => _palette;
+  MarlinThemeMode get mode => _mode;
 
-  void setPalette(MarlinThemePalette palette) {
-    if (_palette == palette) {
+  void setMode(MarlinThemeMode mode) {
+    if (_mode == mode) {
       return;
     }
 
-    _palette = palette;
+    _mode = mode;
     notifyListeners();
   }
 }

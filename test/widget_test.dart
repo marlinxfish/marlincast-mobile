@@ -75,11 +75,9 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(SettingsPage), findsOneWidget);
-    expect(find.text('Tema Warna'), findsOneWidget);
-    expect(find.text('Ocean'), findsOneWidget);
-    expect(find.text('Ember'), findsOneWidget);
-    expect(find.text('Mint'), findsOneWidget);
-    expect(find.text('Midnight'), findsOneWidget);
+    expect(find.text('Tema'), findsOneWidget);
+    expect(find.text('Light'), findsOneWidget);
+    expect(find.text('Dark'), findsOneWidget);
   });
 
   testWidgets('settings theme option changes app theme', (tester) async {
@@ -90,18 +88,16 @@ void main() {
     await tester.tap(find.text('Settings').last);
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Midnight'));
+    await tester.tap(find.text('Dark'));
     await tester.pumpAndSettle();
 
     final materialApp = tester.widget<MaterialApp>(find.byType(MaterialApp));
     expect(materialApp.theme?.brightness, Brightness.dark);
   });
 
-  test('provides three light palettes and one dark palette', () {
-    expect(MarlinThemes.oceanLight.brightness, Brightness.light);
-    expect(MarlinThemes.emberLight.brightness, Brightness.light);
-    expect(MarlinThemes.mintLight.brightness, Brightness.light);
-    expect(MarlinThemes.midnightDark.brightness, Brightness.dark);
+  test('provides light and dark themes', () {
+    expect(MarlinThemes.light.brightness, Brightness.light);
+    expect(MarlinThemes.dark.brightness, Brightness.dark);
   });
 
   test('sniffs video URLs by extension and content type', () {

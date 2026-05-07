@@ -12,11 +12,11 @@ import 'app_routes.dart';
 class MarlinCastApp extends StatefulWidget {
   const MarlinCastApp({
     super.key,
-    this.palette = MarlinThemePalette.ocean,
+    this.themeMode = MarlinThemeMode.light,
     this.showBrowserWebView = true,
   });
 
-  final MarlinThemePalette palette;
+  final MarlinThemeMode themeMode;
   final bool showBrowserWebView;
 
   @override
@@ -29,7 +29,7 @@ class _MarlinCastAppState extends State<MarlinCastApp> {
   @override
   void initState() {
     super.initState();
-    _themeController = ThemeController(initialPalette: widget.palette);
+    _themeController = ThemeController(initialMode: widget.themeMode);
   }
 
   @override
@@ -48,7 +48,7 @@ class _MarlinCastAppState extends State<MarlinCastApp> {
           return MaterialApp(
             title: AppConstants.name,
             debugShowCheckedModeBanner: false,
-            theme: MarlinThemes.byPalette(_themeController.palette),
+            theme: MarlinThemes.byMode(_themeController.mode),
             routes: {
               AppRoutes.home: (_) => const HomePage(),
               AppRoutes.browser: (_) => BrowserPage(

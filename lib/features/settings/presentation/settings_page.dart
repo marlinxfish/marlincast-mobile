@@ -23,7 +23,10 @@ class SettingsPage extends StatelessWidget {
             builder: (context, _) {
               return ListView(
                 children: [
-                  const MenuButton(),
+                  const Align(
+                    alignment: Alignment.centerLeft,
+                    child: MenuButton(),
+                  ),
                   const SizedBox(height: 18),
                   Text(
                     'Settings',
@@ -40,9 +43,9 @@ class SettingsPage extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 22),
-                  _ThemeSection(
-                    selectedPalette: themeController.palette,
-                    onChanged: themeController.setPalette,
+                  _ThemeRow(
+                    selectedMode: themeController.mode,
+                    onChanged: themeController.setMode,
                   ),
                 ],
               );
@@ -54,138 +57,131 @@ class SettingsPage extends StatelessWidget {
   }
 }
 
-class _ThemeSection extends StatelessWidget {
-  const _ThemeSection({
-    required this.selectedPalette,
+class _ThemeRow extends StatelessWidget {
+  const _ThemeRow({
+    required this.selectedMode,
     required this.onChanged,
   });
 
-  final MarlinThemePalette selectedPalette;
-  final ValueChanged<MarlinThemePalette> onChanged;
+  final MarlinThemeMode selectedMode;
+  final ValueChanged<MarlinThemeMode> onChanged;
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
         color: colorScheme.surface,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(color: colorScheme.outlineVariant),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          Row(
-            children: [
-              Icon(LucideIcons.palette, color: colorScheme.primary, size: 20),
-              const SizedBox(width: 10),
-              Text(
-                'Tema Warna',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w800,
-                ),
+          Icon(LucideIcons.palette, color: colorScheme.primary, size: 20),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              'Tema',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w800,
               ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          for (final palette in MarlinThemePalette.values) ...[
-            _ThemeOptionTile(
-              palette: palette,
-              selected: palette == selectedPalette,
-              onTap: () => onChanged(palette),
             ),
-            if (palette != MarlinThemePalette.values.last)
-              const SizedBox(height: 8),
-          ],
+          ),
+          _ThemeToggle(
+            selectedMode: selectedMode,
+            onChanged: onChanged,
+          ),
         ],
       ),
     );
   }
 }
 
-class _ThemeOptionTile extends StatelessWidget {
-  const _ThemeOptionTile({
-    required this.palette,
+class _ThemeToggle extends StatelessWidget {
+  const _ThemeToggle({
+    required this.selectedMode,
+    required this.onChanged,
+  });
+
+  final MarlinThemeMode selectedMode;
+  final ValueChanged<MarlinThemeMode> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _ToggleChip(
+            icon: LucideIcons.sun,
+            label: 'Light',
+            selected: selectedMode == MarlinThemeMode.light,
+            onTap: () => onChanged(MarlinThemeMode.light),
+          ),
+          _ToggleChip(
+            icon: LucideIcons.moon,
+            label: 'Dark',
+            selected: selectedMode == MarlinThemeMode.dark,
+            onTap: () => onChanged(MarlinThemeMode.dark),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ToggleChip extends StatelessWidget {
+  const _ToggleChip({
+    required this.icon,
+    required this.label,
     required this.selected,
     required this.onTap,
   });
 
-  final MarlinThemePalette palette;
+  final IconData icon;
+  final String label;
   final bool selected;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final theme = MarlinThemes.byPalette(palette);
 
-    return Material(
-      color: selected ? colorScheme.primaryContainer : colorScheme.surfaceContainerHighest,
-      borderRadius: BorderRadius.circular(16),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(16),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Row(
-            children: [
-              _ThemeSwatch(theme: theme),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      palette.label,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      palette.description,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              if (selected)
-                Icon(LucideIcons.check, color: colorScheme.primary, size: 20),
-            ],
-          ),
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: selected ? colorScheme.primary : Colors.transparent,
+          borderRadius: BorderRadius.circular(10),
         ),
-      ),
-    );
-  }
-}
-
-class _ThemeSwatch extends StatelessWidget {
-  const _ThemeSwatch({required this.theme});
-
-  final ThemeData theme;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = theme.colorScheme;
-
-    return Container(
-      width: 42,
-      height: 42,
-      decoration: BoxDecoration(
-        color: scheme.surface,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: scheme.outlineVariant),
-      ),
-      child: Row(
-        children: [
-          Expanded(child: ColoredBox(color: scheme.primary)),
-          Expanded(child: ColoredBox(color: scheme.secondary)),
-          Expanded(child: ColoredBox(color: scheme.tertiary)),
-        ],
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: 16,
+              color: selected ? colorScheme.onPrimary : colorScheme.onSurfaceVariant,
+            ),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                color: selected ? colorScheme.onPrimary : colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
