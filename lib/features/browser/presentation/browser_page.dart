@@ -27,6 +27,7 @@ class _BrowserPageState extends State<BrowserPage> {
   final _browserController = BrowserController();
   final _urlController = TextEditingController(text: 'https://google.com');
   final _urlFocusNode = FocusNode();
+  bool? _browserDarkModeEnabled;
 
   InAppWebViewController? _webViewController;
 
@@ -40,6 +41,9 @@ class _BrowserPageState extends State<BrowserPage> {
 
   @override
   Widget build(BuildContext context) {
+    final browserDarkModeEnabled = _browserDarkModeEnabled ??
+        Theme.of(context).brightness == Brightness.dark;
+
     return PopScope(
       canPop: !widget.showWebView,
       onPopInvokedWithResult: _handleSystemBack,
@@ -55,7 +59,9 @@ class _BrowserPageState extends State<BrowserPage> {
                     controller: _urlController,
                     focusNode: _urlFocusNode,
                     blockedAds: _browserController.blockedAds,
+                    darkModeEnabled: browserDarkModeEnabled,
                     onSubmitted: _loadUrl,
+                    onDarkModeChanged: _setBrowserDarkMode,
                   ),
                   if (_browserController.progress < 1)
                     LinearProgressIndicator(value: _browserController.progress),
@@ -80,7 +86,9 @@ class _BrowserPageState extends State<BrowserPage> {
               ),
             );
           },
-          child: widget.showWebView ? _buildWebView() : null,
+          child: widget.showWebView
+              ? _buildWebView(browserDarkModeEnabled)
+              : null,
         ),
       ),
     );
@@ -103,8 +111,8 @@ class _BrowserPageState extends State<BrowserPage> {
     Navigator.of(context).maybePop();
   }
 
-  Widget _buildWebView() {
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+  Widget _buildWebView(bool browserDarkModeEnabled) {
+    final forceDark = browserDarkModeEnabled ? ForceDark.AUTO : ForceDark.OFF;
 
     return InAppWebView(
       initialUrlRequest: URLRequest(url: WebUri(_urlController.text)),
@@ -117,9 +125,8 @@ class _BrowserPageState extends State<BrowserPage> {
         useShouldOverrideUrlLoading: true,
         supportMultipleWindows: true,
         preferredContentMode: UserPreferredContentMode.MOBILE,
-        algorithmicDarkeningAllowed: isDarkMode,
-        forceDark: isDarkMode ? ForceDark.AUTO : ForceDark.OFF,
-        forceDarkStrategy: ForceDarkStrategy.PREFER_WEB_THEME_OVER_USER_AGENT_DARKENING,
+        algorithmicDarkeningAllowed: browserDarkModeEnabled,
+        forceDark: forceDark,
       ),
       initialUserScripts: UnmodifiableListView([
         UserScript(
@@ -229,9 +236,22 @@ class _BrowserPageState extends State<BrowserPage> {
 
     final currentHost = _browserController.currentUrl.host;
     final targetHost = Uri.parse(targetUrl.toString()).host;
+    if (_isGoogleBootstrapRedirect(currentHost: currentHost, targetHost: targetHost)) {
+      return false;
+    }
+
     return currentHost.isNotEmpty &&
         targetHost.isNotEmpty &&
         currentHost != targetHost;
+  }
+
+  bool _isGoogleBootstrapRedirect({
+    required String currentHost,
+    required String targetHost,
+  }) {
+    const allowedGoogleHosts = {'google.com', 'www.google.com'};
+    return allowedGoogleHosts.contains(currentHost) &&
+        allowedGoogleHosts.contains(targetHost);
   }
 
   Future<bool> _confirmPopupOrRedirect({
@@ -276,6 +296,21 @@ class _BrowserPageState extends State<BrowserPage> {
     _browserController.setCurrentUrl(uri);
     _webViewController?.loadUrl(urlRequest: URLRequest(url: WebUri.uri(uri)));
   }
+
+  Future<void> _setBrowserDarkMode(bool enabled) async {
+    if (_browserDarkModeEnabled == enabled) {
+      return;
+    }
+
+    setState(() => _browserDarkModeEnabled = enabled);
+    await _webViewController?.setSettings(
+      settings: InAppWebViewSettings(
+        forceDark: enabled ? ForceDark.AUTO : ForceDark.OFF,
+        algorithmicDarkeningAllowed: enabled,
+      ),
+    );
+    await _webViewController?.reload();
+  }
 }
 
 class _BrowserUnavailableView extends StatelessWidget {
@@ -292,13 +327,17 @@ class _BrowserToolbar extends StatelessWidget {
     required this.controller,
     required this.focusNode,
     required this.blockedAds,
+    required this.darkModeEnabled,
     required this.onSubmitted,
+    required this.onDarkModeChanged,
   });
 
   final TextEditingController controller;
   final FocusNode focusNode;
   final int blockedAds;
+  final bool darkModeEnabled;
   final ValueChanged<String> onSubmitted;
+  final ValueChanged<bool> onDarkModeChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -319,6 +358,27 @@ class _BrowserToolbar extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 8),
+          PopupMenuButton<bool>(
+            tooltip: 'Menu browser',
+            icon: const Icon(LucideIcons.ellipsisVertical),
+            onSelected: onDarkModeChanged,
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                value: !darkModeEnabled,
+                child: Row(
+                  children: [
+                    Icon(
+                      darkModeEnabled ? LucideIcons.moon : LucideIcons.sun,
+                      size: 18,
+                    ),
+                    const SizedBox(width: 10),
+                    Text(darkModeEnabled ? 'Matikan tema gelap' : 'Aktifkan tema gelap'),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(width: 4),
           Tooltip(
             message: 'Iklan diblokir',
             child: Container(
