@@ -7,6 +7,7 @@ class DetectedVideo {
     this.width,
     this.height,
     this.qualityLabel,
+    this.thumbnailUrl,
   });
 
   final Uri url;
@@ -16,6 +17,7 @@ class DetectedVideo {
   final int? width;
   final int? height;
   final String? qualityLabel;
+  final Uri? thumbnailUrl;
 
   String get displayQuality {
     final label = qualityLabel;

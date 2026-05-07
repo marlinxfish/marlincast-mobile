@@ -79,6 +79,7 @@ class BrowserController extends ChangeNotifier {
     int? width,
     int? height,
     String? qualityLabel,
+    Uri? thumbnailUrl,
   }) {
     if (_detectedVideos.any((video) => video.url == url)) {
       return;
@@ -93,6 +94,7 @@ class BrowserController extends ChangeNotifier {
         width: width,
         height: height,
         qualityLabel: qualityLabel,
+        thumbnailUrl: thumbnailUrl,
       ),
     );
     notifyListeners();

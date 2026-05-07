@@ -259,6 +259,7 @@ class _BrowserPageState extends State<BrowserPage> {
     final width = int.tryParse(data['width']?.toString() ?? '');
     final height = int.tryParse(data['height']?.toString() ?? '');
     final qualityLabel = data['qualityLabel']?.toString();
+    final thumbnailUrlValue = data['thumbnailUrl']?.toString();
     final url = Uri.tryParse(urlValue);
     if (url == null) {
       return;
@@ -274,6 +275,7 @@ class _BrowserPageState extends State<BrowserPage> {
       width: width,
       height: height,
       qualityLabel: qualityLabel,
+      thumbnailUrl: Uri.tryParse(thumbnailUrlValue ?? ''),
     );
   }
 
@@ -753,91 +755,78 @@ class _HeaderMetric extends StatelessWidget {
   }
 }
 
-class _DetectedVideoTile extends StatelessWidget {
+class _DetectedVideoTile extends StatefulWidget {
   const _DetectedVideoTile({required this.video, required this.index});
 
   final DetectedVideo video;
   final int index;
 
   @override
+  State<_DetectedVideoTile> createState() => _DetectedVideoTileState();
+}
+
+class _DetectedVideoTileState extends State<_DetectedVideoTile> {
+  bool _expanded = false;
+
+  @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final video = widget.video;
 
     return Material(
       color: colorScheme.surfaceContainerLowest,
-      borderRadius: BorderRadius.circular(22),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(22),
-          border: Border.all(color: colorScheme.outlineVariant),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    color: colorScheme.primaryContainer,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Icon(LucideIcons.play, color: colorScheme.primary),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    video.url.pathSegments.isNotEmpty
-                        ? video.url.pathSegments.last
-                        : video.url.host,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontWeight: FontWeight.w800),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                _QualityBadge(video: video),
-                _SourceBadge(source: video.source),
-              ],
-            ),
-            const SizedBox(height: 14),
-            _InfoPanel(
-              children: [
-                _InfoLine(label: 'Kualitas', value: video.displayQuality),
-                const SizedBox(height: 10),
-                _InfoLine(label: 'Resolusi', value: _resolutionText(video)),
-                const SizedBox(height: 10),
-                _InfoLine(label: 'Video URL', value: video.url.toString()),
-                const SizedBox(height: 10),
-                _InfoLine(
-                  label: 'Halaman',
-                  value: video.pageUrl?.toString() ?? '-',
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () => _copyUrl(context, video.url.toString()),
-                    icon: const Icon(LucideIcons.copy, size: 16),
-                    label: const Text('Copy URL'),
+      borderRadius: BorderRadius.circular(18),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(18),
+        onTap: () => setState(() => _expanded = !_expanded),
+        child: Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: colorScheme.outlineVariant),
+          ),
+          child: Column(
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _VideoThumbnail(video: video),
+                  const SizedBox(width: 10),
+                  Expanded(child: _VideoMetadata(video: video)),
+                ],
+              ),
+              AnimatedCrossFade(
+                firstChild: const SizedBox.shrink(),
+                secondChild: Padding(
+                  padding: const EdgeInsets.only(top: 10),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () =>
+                              _copyUrl(context, video.url.toString()),
+                          icon: const Icon(LucideIcons.copy, size: 16),
+                          label: const Text('Copy URL'),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: FilledButton.icon(
+                          onPressed: () {},
+                          icon: const Icon(LucideIcons.cast, size: 16),
+                          label: const Text('Cast'),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: FilledButton.icon(
-                    onPressed: () {},
-                    icon: const Icon(LucideIcons.cast, size: 16),
-                    label: const Text('Cast'),
-                  ),
-                ),
-              ],
-            ),
-          ],
+                crossFadeState: _expanded
+                    ? CrossFadeState.showSecond
+                    : CrossFadeState.showFirst,
+                duration: const Duration(milliseconds: 180),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -850,14 +839,138 @@ class _DetectedVideoTile extends StatelessWidget {
       context,
     ).showSnackBar(const SnackBar(content: Text('URL video disalin')));
   }
+}
+
+class _VideoThumbnail extends StatelessWidget {
+  const _VideoThumbnail({required this.video});
+
+  final DetectedVideo video;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final thumbnailUrl = video.thumbnailUrl;
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        width: 86,
+        height: 64,
+        color: colorScheme.surfaceContainerHighest,
+        child: thumbnailUrl == null
+            ? Icon(LucideIcons.play, color: colorScheme.primary)
+            : Image.network(
+                thumbnailUrl.toString(),
+                fit: BoxFit.cover,
+                errorBuilder: (_, _, _) {
+                  return Icon(LucideIcons.play, color: colorScheme.primary);
+                },
+              ),
+      ),
+    );
+  }
+}
+
+class _VideoMetadata extends StatelessWidget {
+  const _VideoMetadata({required this.video});
+
+  final DetectedVideo video;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                video.url.pathSegments.isNotEmpty
+                    ? video.url.pathSegments.last
+                    : video.url.host,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -0.2,
+                ),
+              ),
+            ),
+            const SizedBox(width: 6),
+            _QualityBadge(video: video),
+          ],
+        ),
+        const SizedBox(height: 6),
+        _CompactMetaLine(
+          icon: LucideIcons.link,
+          text: video.url.toString(),
+          color: colorScheme.primary,
+        ),
+        const SizedBox(height: 4),
+        _CompactMetaLine(
+          icon: LucideIcons.globe,
+          text: video.pageUrl?.host ?? '-',
+          color: colorScheme.tertiary,
+        ),
+        const SizedBox(height: 4),
+        Row(
+          children: [
+            Expanded(
+              child: _CompactMetaLine(
+                icon: LucideIcons.monitorPlay,
+                text: _resolutionText(video),
+                color: colorScheme.secondary,
+              ),
+            ),
+            _SourceBadge(source: video.source),
+          ],
+        ),
+      ],
+    );
+  }
 
   String _resolutionText(DetectedVideo video) {
     final width = video.width;
     final height = video.height;
     if (width == null || height == null || width <= 0 || height <= 0) {
-      return video.displayQuality == 'Adaptive' ? 'Adaptive stream' : 'Unknown';
+      return video.displayQuality == 'Adaptive' ? 'Adaptive' : 'Unknown';
     }
     return '${width}x$height';
+  }
+}
+
+class _CompactMetaLine extends StatelessWidget {
+  const _CompactMetaLine({
+    required this.icon,
+    required this.text,
+    required this.color,
+  });
+
+  final IconData icon;
+  final String text;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(icon, size: 12, color: color),
+        const SizedBox(width: 5),
+        Expanded(
+          child: Text(
+            text,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+      ],
+    );
   }
 }
 
@@ -909,57 +1022,6 @@ class _SourceBadge extends StatelessWidget {
           fontWeight: FontWeight.w800,
         ),
       ),
-    );
-  }
-}
-
-class _InfoPanel extends StatelessWidget {
-  const _InfoPanel({required this.children});
-
-  final List<Widget> children;
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.55),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: children,
-      ),
-    );
-  }
-}
-
-class _InfoLine extends StatelessWidget {
-  const _InfoLine({required this.label, required this.value});
-
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: Theme.of(context).textTheme.labelSmall?.copyWith(
-            color: colorScheme.onSurfaceVariant,
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-        const SizedBox(height: 2),
-        SelectableText(value, style: Theme.of(context).textTheme.bodySmall),
-      ],
     );
   }
 }

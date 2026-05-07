@@ -23,6 +23,20 @@ class MediaSnifferScript {
     return match ? match[1] + 'p' : null;
   };
 
+  const thumbnailFromDocument = () => {
+    const selectors = [
+      'meta[property="og:image"]',
+      'meta[name="twitter:image"]',
+      'link[rel="image_src"]'
+    ];
+    for (const selector of selectors) {
+      const element = document.querySelector(selector);
+      const value = element && (element.content || element.href);
+      if (value) return new URL(value, window.location.href).href;
+    }
+    return null;
+  };
+
   const report = (url, source, metadata) => {
     if (!url || typeof url !== 'string') return;
     const width = metadata && metadata.width ? Math.round(metadata.width) : null;
@@ -34,7 +48,8 @@ class MediaSnifferScript {
       pageUrl: window.location.href,
       width: width,
       height: height,
-      qualityLabel: qualityFromHeight(height) || qualityFromUrl(absoluteUrl)
+      qualityLabel: qualityFromHeight(height) || qualityFromUrl(absoluteUrl),
+      thumbnailUrl: metadata && metadata.thumbnailUrl ? metadata.thumbnailUrl : thumbnailFromDocument()
     });
   };
 
@@ -59,6 +74,7 @@ class MediaSnifferScript {
       const metadata = {
         width: mediaElement && mediaElement.videoWidth,
         height: mediaElement && mediaElement.videoHeight,
+        thumbnailUrl: mediaElement && mediaElement.poster ? new URL(mediaElement.poster, window.location.href).href : null,
       };
       if (element.currentSrc) report(element.currentSrc, 'htmlMediaElement', metadata);
       if (element.src) report(element.src, 'htmlMediaElement', metadata);
