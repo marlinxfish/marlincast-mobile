@@ -26,6 +26,7 @@ class BrowserPage extends StatefulWidget {
 class _BrowserPageState extends State<BrowserPage> {
   final _browserController = BrowserController();
   final _urlController = TextEditingController(text: 'https://google.com');
+  final _urlFocusNode = FocusNode();
 
   InAppWebViewController? _webViewController;
 
@@ -33,6 +34,7 @@ class _BrowserPageState extends State<BrowserPage> {
   void dispose() {
     _browserController.dispose();
     _urlController.dispose();
+    _urlFocusNode.dispose();
     super.dispose();
   }
 
@@ -51,6 +53,7 @@ class _BrowserPageState extends State<BrowserPage> {
                 children: [
                   _BrowserToolbar(
                     controller: _urlController,
+                    focusNode: _urlFocusNode,
                     blockedAds: _browserController.blockedAds,
                     onSubmitted: _loadUrl,
                   ),
@@ -59,7 +62,11 @@ class _BrowserPageState extends State<BrowserPage> {
                   Expanded(
                     child: Stack(
                       children: [
-                        child ?? const _BrowserUnavailableView(),
+                        GestureDetector(
+                          behavior: HitTestBehavior.translucent,
+                          onTapDown: (_) => _urlFocusNode.unfocus(),
+                          child: child ?? const _BrowserUnavailableView(),
+                        ),
                         if (_browserController.hasDetectedVideo)
                           _DetectedVideoSheet(
                             url: _browserController.detectedVideo!.url,
@@ -103,9 +110,12 @@ class _BrowserPageState extends State<BrowserPage> {
       initialUrlRequest: URLRequest(url: WebUri(_urlController.text)),
       initialSettings: InAppWebViewSettings(
         javaScriptEnabled: true,
+        javaScriptCanOpenWindowsAutomatically: true,
         mediaPlaybackRequiresUserGesture: false,
         transparentBackground: false,
         useShouldInterceptRequest: true,
+        useShouldOverrideUrlLoading: true,
+        supportMultipleWindows: true,
         preferredContentMode: UserPreferredContentMode.MOBILE,
         algorithmicDarkeningAllowed: isDarkMode,
         forceDark: isDarkMode ? ForceDark.AUTO : ForceDark.OFF,
@@ -129,6 +139,40 @@ class _BrowserPageState extends State<BrowserPage> {
       },
       onProgressChanged: (controller, progress) {
         _browserController.setProgress(progress / 100);
+      },
+      onScrollChanged: (controller, x, y) {
+        _urlFocusNode.unfocus();
+      },
+      shouldOverrideUrlLoading: (controller, navigationAction) async {
+        final url = navigationAction.request.url;
+        if (url == null) {
+          return NavigationActionPolicy.ALLOW;
+        }
+
+        if (_isSuspiciousRedirect(navigationAction)) {
+          final allow = await _confirmPopupOrRedirect(
+            title: 'Web ini ingin redirect',
+            message: url.toString(),
+          );
+          return allow
+              ? NavigationActionPolicy.ALLOW
+              : NavigationActionPolicy.CANCEL;
+        }
+
+        return NavigationActionPolicy.ALLOW;
+      },
+      onCreateWindow: (controller, createWindowAction) async {
+        final url = createWindowAction.request.url;
+        final allow = await _confirmPopupOrRedirect(
+          title: 'Web ini ingin membuka pop-up',
+          message: url?.toString() ?? 'Pop-up tanpa URL jelas.',
+        );
+
+        if (allow && url != null) {
+          await controller.loadUrl(urlRequest: URLRequest(url: url));
+        }
+
+        return true;
       },
       shouldInterceptRequest: (controller, request) async {
         final uri = Uri.parse(request.url.toString());
@@ -173,7 +217,60 @@ class _BrowserPageState extends State<BrowserPage> {
     return 'other';
   }
 
+  bool _isSuspiciousRedirect(NavigationAction action) {
+    if (action.isForMainFrame != true || action.hasGesture == true) {
+      return false;
+    }
+
+    final targetUrl = action.request.url;
+    if (targetUrl == null) {
+      return false;
+    }
+
+    final currentHost = _browserController.currentUrl.host;
+    final targetHost = Uri.parse(targetUrl.toString()).host;
+    return currentHost.isNotEmpty &&
+        targetHost.isNotEmpty &&
+        currentHost != targetHost;
+  }
+
+  Future<bool> _confirmPopupOrRedirect({
+    required String title,
+    required String message,
+  }) async {
+    if (!mounted) {
+      return false;
+    }
+
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text(title),
+          content: Text(
+            message,
+            maxLines: 4,
+            overflow: TextOverflow.ellipsis,
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Stop'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Biarkan'),
+            ),
+          ],
+        );
+      },
+    );
+
+    return result ?? false;
+  }
+
   void _loadUrl(String value) {
+    _urlFocusNode.unfocus();
     final uri = BrowserUrlResolver.resolve(value);
     _urlController.text = uri.toString();
     _browserController.setCurrentUrl(uri);
@@ -193,11 +290,13 @@ class _BrowserUnavailableView extends StatelessWidget {
 class _BrowserToolbar extends StatelessWidget {
   const _BrowserToolbar({
     required this.controller,
+    required this.focusNode,
     required this.blockedAds,
     required this.onSubmitted,
   });
 
   final TextEditingController controller;
+  final FocusNode focusNode;
   final int blockedAds;
   final ValueChanged<String> onSubmitted;
 
@@ -214,6 +313,7 @@ class _BrowserToolbar extends StatelessWidget {
           Expanded(
             child: _UrlTextField(
               controller: controller,
+              focusNode: focusNode,
               colorScheme: colorScheme,
               onSubmitted: onSubmitted,
             ),
@@ -251,11 +351,13 @@ class _BrowserToolbar extends StatelessWidget {
 class _UrlTextField extends StatefulWidget {
   const _UrlTextField({
     required this.controller,
+    required this.focusNode,
     required this.colorScheme,
     required this.onSubmitted,
   });
 
   final TextEditingController controller;
+  final FocusNode focusNode;
   final ColorScheme colorScheme;
   final ValueChanged<String> onSubmitted;
 
@@ -272,6 +374,7 @@ class _UrlTextFieldState extends State<_UrlTextField> {
       height: 40,
       child: TextField(
         controller: widget.controller,
+        focusNode: widget.focusNode,
         keyboardType: TextInputType.url,
         textInputAction: TextInputAction.go,
         style: Theme.of(context).textTheme.bodyMedium,
