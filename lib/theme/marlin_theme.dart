@@ -1,41 +1,43 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-enum MarlinThemePalette {
-  ocean,
-  ember,
-  mint,
-  midnight,
+enum MarlinThemeMode {
+  light,
+  dark,
+}
+
+extension MarlinThemeModeLabel on MarlinThemeMode {
+  String get label {
+    return switch (this) {
+      MarlinThemeMode.light => 'Light',
+      MarlinThemeMode.dark => 'Dark',
+    };
+  }
+
+  String get description {
+    return switch (this) {
+      MarlinThemeMode.light => 'Tema ocean terang untuk siang hari.',
+      MarlinThemeMode.dark => 'Tema gelap untuk malam hari.',
+    };
+  }
 }
 
 class MarlinThemes {
-  static final ThemeData oceanLight = _theme(
+  static final ThemeData light = _theme(
     seedColor: const Color(0xFF0EA5E9),
     scaffoldBackground: const Color(0xFFF4FAFF),
   );
 
-  static final ThemeData emberLight = _theme(
-    seedColor: const Color(0xFFF97316),
-    scaffoldBackground: const Color(0xFFFFF7ED),
-  );
-
-  static final ThemeData mintLight = _theme(
-    seedColor: const Color(0xFF10B981),
-    scaffoldBackground: const Color(0xFFF0FDF4),
-  );
-
-  static final ThemeData midnightDark = _theme(
+  static final ThemeData dark = _theme(
     seedColor: const Color(0xFF38BDF8),
     scaffoldBackground: const Color(0xFF050B18),
     brightness: Brightness.dark,
   );
 
-  static ThemeData byPalette(MarlinThemePalette palette) {
-    return switch (palette) {
-      MarlinThemePalette.ocean => oceanLight,
-      MarlinThemePalette.ember => emberLight,
-      MarlinThemePalette.mint => mintLight,
-      MarlinThemePalette.midnight => midnightDark,
+  static ThemeData byMode(MarlinThemeMode mode) {
+    return switch (mode) {
+      MarlinThemeMode.light => light,
+      MarlinThemeMode.dark => dark,
     };
   }
 
