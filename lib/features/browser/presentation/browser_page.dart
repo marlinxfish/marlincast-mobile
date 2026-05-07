@@ -8,7 +8,6 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../shared/presentation/widgets/menu_button.dart';
 import '../../home/presentation/widgets/home_drawer.dart';
 import '../application/browser_controller.dart';
-import '../application/browser_preferences.dart';
 import '../application/browser_url_resolver.dart';
 import '../application/cosmetic_filter_script.dart';
 import '../application/media_sniffer_script.dart';
@@ -25,18 +24,11 @@ class BrowserPage extends StatefulWidget {
 
 class _BrowserPageState extends State<BrowserPage> {
   final _browserController = BrowserController();
-  final _browserPreferences = BrowserPreferences();
   final _urlController = TextEditingController(text: 'https://google.com');
   final _urlFocusNode = FocusNode();
   bool? _browserDarkModeEnabled;
 
   InAppWebViewController? _webViewController;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadBrowserPreferences();
-  }
 
   @override
   void dispose() {
@@ -118,6 +110,9 @@ class _BrowserPageState extends State<BrowserPage> {
 
   Widget _buildWebView(bool browserDarkModeEnabled) {
     final forceDark = browserDarkModeEnabled ? ForceDark.AUTO : ForceDark.OFF;
+    final themeScript = browserDarkModeEnabled
+        ? null
+        : CosmeticFilterScript.forceLightMode;
 
     return InAppWebView(
       initialUrlRequest: URLRequest(url: WebUri(_urlController.text)),
@@ -138,6 +133,11 @@ class _BrowserPageState extends State<BrowserPage> {
           source: MediaSnifferScript.source,
           injectionTime: UserScriptInjectionTime.AT_DOCUMENT_START,
         ),
+        if (themeScript != null)
+          UserScript(
+            source: themeScript,
+            injectionTime: UserScriptInjectionTime.AT_DOCUMENT_START,
+          ),
         UserScript(
           source: CosmeticFilterScript.source,
           injectionTime: UserScriptInjectionTime.AT_DOCUMENT_END,
@@ -158,6 +158,9 @@ class _BrowserPageState extends State<BrowserPage> {
         await controller.evaluateJavascript(
           source: CosmeticFilterScript.source,
         );
+        if (themeScript != null) {
+          await controller.evaluateJavascript(source: themeScript);
+        }
         await controller.evaluateJavascript(source: MediaSnifferScript.source);
       },
       onProgressChanged: (controller, progress) {
@@ -357,22 +360,18 @@ class _BrowserPageState extends State<BrowserPage> {
     }
 
     setState(() => _browserDarkModeEnabled = enabled);
-    await _browserPreferences.saveDarkModeEnabled(enabled);
     await _webViewController?.setSettings(
       settings: InAppWebViewSettings(
         forceDark: enabled ? ForceDark.AUTO : ForceDark.OFF,
         algorithmicDarkeningAllowed: enabled,
       ),
     );
-    await _webViewController?.reload();
-  }
-
-  Future<void> _loadBrowserPreferences() async {
-    final darkModeEnabled = await _browserPreferences.loadDarkModeEnabled();
-    if (!mounted || darkModeEnabled == null) {
-      return;
+    if (!enabled) {
+      await _webViewController?.evaluateJavascript(
+        source: CosmeticFilterScript.forceLightMode,
+      );
     }
-    setState(() => _browserDarkModeEnabled = darkModeEnabled);
+    await _webViewController?.reload();
   }
 
   void _openDetectedVideos() {

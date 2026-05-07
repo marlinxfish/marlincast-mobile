@@ -1,4 +1,16 @@
 class CosmeticFilterScript {
+  static const forceLightMode = r'''
+(function() {
+  var meta = document.querySelector('meta[name="color-scheme"]');
+  if (!meta) {
+    meta = document.createElement('meta');
+    meta.name = 'color-scheme';
+    document.head.appendChild(meta);
+  }
+  meta.content = 'only light';
+})();
+''';
+
   static const source = r'''
 (function() {
   const selectors = [

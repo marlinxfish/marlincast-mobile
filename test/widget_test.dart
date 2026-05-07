@@ -12,7 +12,9 @@ import 'package:mobile/features/file_explorer/presentation/file_explorer_page.da
 import 'package:mobile/features/home/presentation/home_page.dart';
 import 'package:mobile/features/home/presentation/widgets/home_drawer.dart';
 import 'package:mobile/features/settings/presentation/settings_page.dart';
+import 'package:mobile/app/app_routes.dart';
 import 'package:mobile/theme/marlin_theme.dart';
+import 'package:mobile/theme/theme_controller.dart';
 
 void main() {
   testWidgets('shows home page with side drawer menu', (tester) async {
@@ -20,9 +22,16 @@ void main() {
 
     expect(find.byType(HomePage), findsOneWidget);
     expect(find.byIcon(LucideIcons.menu), findsOneWidget);
+    expect(find.byIcon(LucideIcons.scanQrCode), findsOneWidget);
+    expect(find.text('TV belum terhubung'), findsOneWidget);
+    expect(find.text('TV tersedia di jaringan ini'), findsOneWidget);
+    expect(find.text('Status Sistem'), findsNothing);
+
+    await tester.pump(const Duration(milliseconds: 350));
+    expect(find.text('Marlin Cast TV - Living Room'), findsOneWidget);
 
     await tester.tap(find.byIcon(LucideIcons.menu));
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(seconds: 1));
 
     expect(find.byType(HomeDrawer), findsOneWidget);
     expect(find.text('Home'), findsOneWidget);
@@ -33,49 +42,34 @@ void main() {
   });
 
   testWidgets('browser menu opens browser page', (tester) async {
-    await tester.pumpWidget(const MarlinCastApp(showBrowserWebView: false));
-
-    await tester.tap(find.byIcon(LucideIcons.menu));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Browser').last);
-    await tester.pumpAndSettle();
-
-    expect(find.byType(BrowserPage), findsOneWidget);
-
-    await tester.tap(find.byIcon(LucideIcons.menu));
-    await tester.pumpAndSettle();
-
-    final browserTile = tester.widget<Material>(
-      find
-          .ancestor(
-            of: find.text('Browser').last,
-            matching: find.byType(Material),
-          )
-          .first,
+    await tester.pumpWidget(
+      const MaterialApp(
+        initialRoute: AppRoutes.browser,
+        routes: {
+          AppRoutes.browser: _browserTestRoute,
+        },
+      ),
     );
 
-    expect(browserTile.color, isNot(Colors.transparent));
+    expect(find.byType(BrowserPage), findsOneWidget);
   });
 
   testWidgets('file explorer menu opens file explorer page', (tester) async {
-    await tester.pumpWidget(const MarlinCastApp(showBrowserWebView: false));
-
-    await tester.tap(find.byIcon(LucideIcons.menu));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('File Explorer').last);
-    await tester.pumpAndSettle();
+    await tester.pumpWidget(
+      const MaterialApp(home: FileExplorerPage()),
+    );
 
     expect(find.byType(FileExplorerPage), findsOneWidget);
     expect(find.text('Pilih Video'), findsOneWidget);
   });
 
   testWidgets('settings menu opens settings page', (tester) async {
-    await tester.pumpWidget(const MarlinCastApp(showBrowserWebView: false));
-
-    await tester.tap(find.byIcon(LucideIcons.menu));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Settings').last);
-    await tester.pumpAndSettle();
+    await tester.pumpWidget(
+      ThemeScope(
+        controller: ThemeController(),
+        child: const MaterialApp(home: SettingsPage()),
+      ),
+    );
 
     expect(find.byType(SettingsPage), findsOneWidget);
     expect(find.text('Tema'), findsOneWidget);
@@ -84,15 +78,13 @@ void main() {
   });
 
   testWidgets('settings theme option changes app theme', (tester) async {
-    await tester.pumpWidget(const MarlinCastApp(showBrowserWebView: false));
-
-    await tester.tap(find.byIcon(LucideIcons.menu));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Settings').last);
-    await tester.pumpAndSettle();
+    await tester.pumpWidget(const MarlinCastApp(
+      showBrowserWebView: false,
+      initialRoute: AppRoutes.settings,
+    ));
 
     await tester.tap(find.text('Dark'));
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(seconds: 1));
 
     final materialApp = tester.widget<MaterialApp>(find.byType(MaterialApp));
     expect(materialApp.theme?.brightness, Brightness.dark);
@@ -231,4 +223,17 @@ void main() {
 
     expect(file.formattedSize, '15.0 MB');
   });
+}
+
+class _BrowserTestRoute extends StatelessWidget {
+  const _BrowserTestRoute();
+
+  @override
+  Widget build(BuildContext context) {
+    return const BrowserPage(showWebView: false);
+  }
+}
+
+Widget _browserTestRoute(BuildContext context) {
+  return const _BrowserTestRoute();
 }

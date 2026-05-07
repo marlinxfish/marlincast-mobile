@@ -14,10 +14,12 @@ class MarlinCastApp extends StatefulWidget {
     super.key,
     this.themeMode = MarlinThemeMode.light,
     this.showBrowserWebView = true,
+    this.initialRoute,
   });
 
   final MarlinThemeMode themeMode;
   final bool showBrowserWebView;
+  final String? initialRoute;
 
   @override
   State<MarlinCastApp> createState() => _MarlinCastAppState();
@@ -50,6 +52,7 @@ class _MarlinCastAppState extends State<MarlinCastApp> {
             title: AppConstants.name,
             debugShowCheckedModeBanner: false,
             theme: MarlinThemes.byMode(_themeController.mode),
+            initialRoute: widget.initialRoute,
             routes: {
               AppRoutes.home: (_) => const HomePage(),
               AppRoutes.browser: (_) => BrowserPage(
